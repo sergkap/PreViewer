@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "PreviewGenerator.h"
+#include <wingdi.h>
 
 
 PreviewGenerator::PreviewGenerator()
@@ -45,6 +46,35 @@ HRESULT PreviewGenerator::BuildPreview(IStream *iStream, CString fileExt)
 	}
 	return hr;
 }
+HRESULT PreviewGenerator::BuildPreview(CString filePath, CString fileExt)
+{
+	HRESULT hr = E_FAIL;
+	std::vector<CString> res;
+	GetClsidsFromExt(fileExt, res);
+
+	for (int i = 0; i < res.size(); i++)
+	{
+		CLSID cls;
+		CLSIDFromString((LPWSTR)(LPCTSTR)res[i], &cls);
+		//hr = ShowPreviewWithPreviewHandler(iStream, cls);
+		//if (hr == S_OK)
+		//	return hr;
+		//hr = ShowPreviewWithThumbnailProvider(iStream, cls);
+		//if (hr == S_OK)
+		//	return hr;
+
+		hr = ShowPreviewWithPreviewHandler(filePath, cls);
+		if (hr == S_OK)
+			return hr;
+		hr = ShowPreviewWithThumbnailProvider(filePath, cls);
+		if (hr == S_OK)
+			return hr;
+
+	}
+	return hr;
+}
+
+
 //Private
 
 
@@ -248,7 +278,52 @@ void PreviewGenerator::DrawBitMap(HBITMAP bmp)
 	SelectObject(hdcMem, oldBitmap);
 	DeleteDC(hdcMem);
 }
+HRESULT PreviewGenerator::ShowPreviewWithPreviewHandler(CString filePath, CLSID cls)
+{
+	DWORD dwRet = ERROR_BAD_ARGUMENTS;
+	IInitializeWithFile		*iIFile;
+	if (iPHandler != NULL)
+	{
+		iPHandler->Unload();
+		SAFERELEASE(iPHandler);
+	}
 
+	HRESULT hr = CoCreateInstance(cls, NULL, CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER, IID_IPreviewHandler, (LPVOID*)&iPHandler);
+	if (hr == S_OK)
+	{
+		hr = iPHandler->QueryInterface(IID_IInitializeWithFile, (LPVOID*)&iIFile);
+		if (hr != S_OK)
+			return hr;
+	}
+	else
+		return hr;
+	if (iIFile)
+		hr = iIFile->Initialize(filePath, STGM_READ);
+
+	if (iPHandler)
+		return DoPreview();
+	return E_FAIL;
+}
+
+HRESULT PreviewGenerator::ShowPreviewWithThumbnailProvider(CString filePath, CLSID clsID)
+{
+	HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+	int nSize = 256;
+	HBITMAP g_hThumbnail;
+	IShellItem *psi;
+	hr = SHCreateItemFromParsingName(filePath, NULL, IID_PPV_ARGS(&psi));
+	if (hr == S_OK)
+	{
+		IThumbnailProvider *pThumbProvider;
+		hr = psi->BindToHandler(NULL, clsID, IID_PPV_ARGS(&pThumbProvider));
+		if (hr == S_OK)
+		{
+			WTS_ALPHATYPE wtsAlpha;
+			hr = pThumbProvider->GetThumbnail(nSize, &g_hThumbnail, &wtsAlpha);
+		}
+	}
+	return E_FAIL;
+}
 
 
 

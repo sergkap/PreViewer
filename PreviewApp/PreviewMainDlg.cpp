@@ -182,7 +182,9 @@ void CPreviewMainDlg::OnBnClickedButtonOpen()
 		pGenerator.previewControl = previewWindow;
 		HRESULT hr = pGenerator.BuildPreview(iStream, fileExt);
 
-		//BuildPreview(iStream, fileExt);
+		//only for file path...
+		//if (hr !=  S_OK)
+		//	hr = pGenerator.BuildPreview(fileNameFull, fileExt);
 	}
 	previewWindow->ShowWindow(SW_SHOW);
 }

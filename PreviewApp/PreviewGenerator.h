@@ -10,6 +10,7 @@ public:
 	
 	CWnd					*previewControl;
 	HRESULT PreviewGenerator::BuildPreview(IStream *iStream, CString fileExt);
+	HRESULT PreviewGenerator::BuildPreview(CString filePath, CString fileExt);
 private:
 	void PreviewGenerator::DrawBitMap(HBITMAP bmp);
 	void PreviewGenerator::GetClsidsFromExt(CString ext, std::vector<CString> &retVal);
@@ -18,11 +19,11 @@ private:
 	HRESULT PreviewGenerator::DoPreview();
 
 	HRESULT PreviewGenerator::ShowPreviewWithPreviewHandler(IStream *stream, CLSID cls);
-	HRESULT PreviewGenerator::ShowPreviewWithPreviewHandler(CString filePath, CLSID cls);
 	HRESULT PreviewGenerator::ShowPreviewWithThumbnailProvider(IStream *stream, CLSID cls);
-	HRESULT PreviewGenerator::ShowPreviewWithThumbnailProvider(CString filePath, CLSID clsID);
-
 	
+	HRESULT PreviewGenerator::ShowPreviewWithThumbnailProvider(CString filePath, CLSID clsID);
+	HRESULT PreviewGenerator::ShowPreviewWithPreviewHandler(CString filePath, CLSID cls);
+
 
 
 	/*CWnd					*pImage;
