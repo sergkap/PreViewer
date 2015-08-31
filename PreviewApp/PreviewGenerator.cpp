@@ -105,7 +105,16 @@ void PreviewGenerator::GetClsidsFromExt(CString ext, std::vector<CString> &retVa
 		if (it == res.end())
 			res.push_back(buff);
 	}
-
+	extra = L"{534A1E02-D58F-44f0-B58B-36CBED287C7C}";
+	res.push_back(extra);
+	//hr = AssocQueryString(ASSOCF_VERIFY, ASSOCSTR_SHELLEXTENSION, cs, extra, buff, &size);
+	//if (hr == S_OK)
+	//{
+	//	std::vector<CString>::iterator it = find(res.begin(), res.end(), buff);
+	//	if (it == res.end())
+	//		res.push_back(buff);
+	//}
+	
 	PERCEIVED     ptype;
 	PERCEIVEDFLAG pflag;
 	PWSTR         ppszType;
@@ -272,7 +281,6 @@ void PreviewGenerator::DrawBitMap(HBITMAP bmp)
 	Y += rc.Height() / 2;
 	X -= bitmapSize.cx / 2;
 	Y -= bitmapSize.cy / 2;
-
 	BitBlt(hdc, X, Y, newSize.cx, newSize.cy, hdcMem, 0, 0, SRCCOPY);
 
 	SelectObject(hdcMem, oldBitmap);
@@ -302,6 +310,7 @@ HRESULT PreviewGenerator::ShowPreviewWithPreviewHandler(CString filePath, CLSID 
 
 	if (iPHandler)
 		return DoPreview();
+	
 	return E_FAIL;
 }
 
@@ -321,8 +330,29 @@ HRESULT PreviewGenerator::ShowPreviewWithThumbnailProvider(CString filePath, CLS
 			WTS_ALPHATYPE wtsAlpha;
 			hr = pThumbProvider->GetThumbnail(nSize, &g_hThumbnail, &wtsAlpha);
 		}
+		else
+		{
+			IShellItemImageFactory *imageFactory;
+			hr = SHCreateItemFromParsingName(filePath, NULL, IID_PPV_ARGS(&imageFactory));
+			if (hr == S_OK)
+			{
+				CRect pRect;
+				previewControl->GetWindowRect(pRect);
+				
+				int s = pRect.Height();
+				if (s>pRect.Width())
+					s = pRect.Width();
+				SIZE size = { s,s };
+				HBITMAP btmap;
+				hr = imageFactory->GetImage(size, SIIGBF_RESIZETOFIT, &btmap);
+				if (hr == S_OK)
+				{
+					DrawBitMap(btmap);
+				}
+			}
+		}
 	}
-	return E_FAIL;
+	return hr;
 }
 
 
