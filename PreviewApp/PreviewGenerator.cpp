@@ -316,6 +316,27 @@ HRESULT PreviewGenerator::ShowPreviewWithPreviewHandler(CString filePath, CLSID 
 
 HRESULT PreviewGenerator::ShowPreviewWithThumbnailProvider(CString filePath, CLSID clsID)
 {
+
+	IShellItemImageFactory *imageFactory;
+	HRESULT hr = SHCreateItemFromParsingName(filePath, NULL, IID_PPV_ARGS(&imageFactory));
+	if (hr == S_OK)
+	{
+		CRect pRect;
+		previewControl->GetWindowRect(pRect);
+
+		int s = pRect.Height();
+		if (s>pRect.Width())
+			s = pRect.Width();
+		SIZE size = { s, s };
+		HBITMAP btmap;
+		hr = imageFactory->GetImage(size, SIIGBF_RESIZETOFIT, &btmap);
+		if (hr == S_OK)
+		{
+			DrawBitMap(btmap);
+		}
+	}
+	return hr;
+	/*
 	HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
 	int nSize = 256;
 	HBITMAP g_hThumbnail;
@@ -332,27 +353,11 @@ HRESULT PreviewGenerator::ShowPreviewWithThumbnailProvider(CString filePath, CLS
 		}
 		else
 		{
-			IShellItemImageFactory *imageFactory;
-			hr = SHCreateItemFromParsingName(filePath, NULL, IID_PPV_ARGS(&imageFactory));
-			if (hr == S_OK)
-			{
-				CRect pRect;
-				previewControl->GetWindowRect(pRect);
-				
-				int s = pRect.Height();
-				if (s>pRect.Width())
-					s = pRect.Width();
-				SIZE size = { s,s };
-				HBITMAP btmap;
-				hr = imageFactory->GetImage(size, SIIGBF_RESIZETOFIT, &btmap);
-				if (hr == S_OK)
-				{
-					DrawBitMap(btmap);
-				}
-			}
+			
 		}
 	}
 	return hr;
+	*/
 }
 
 
