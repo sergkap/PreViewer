@@ -36,13 +36,6 @@ HRESULT PreviewGenerator::BuildPreview(IStream *iStream, CString fileExt)
 		if (hr == S_OK)
 			return hr;
 
-		//hr = ShowPreviewWithPreviewHandler(filePath, cls);
-		//if (hr == S_OK)
-		//	return hr;
-		//hr = ShowPreviewWithThumbnailProvider(filePath, cls);
-		//if (hr == S_OK)
-		//	return hr;
-
 	}
 	return hr;
 }
@@ -51,17 +44,10 @@ HRESULT PreviewGenerator::BuildPreview(CString filePath, CString fileExt)
 	HRESULT hr = E_FAIL;
 	//std::vector<CString> res;
 	//GetClsidsFromExt(fileExt, res);
-
 	for (int i = 0; i < clsidList.size(); i++)
 	{
 		CLSID cls;
 		CLSIDFromString((LPWSTR)(LPCTSTR)clsidList[i], &cls);
-		//hr = ShowPreviewWithPreviewHandler(iStream, cls);
-		//if (hr == S_OK)
-		//	return hr;
-		//hr = ShowPreviewWithThumbnailProvider(iStream, cls);
-		//if (hr == S_OK)
-		//	return hr;
 
 		hr = ShowPreviewWithPreviewHandler(filePath, cls);
 		if (hr == S_OK)
@@ -69,12 +55,11 @@ HRESULT PreviewGenerator::BuildPreview(CString filePath, CString fileExt)
 		hr = ShowPreviewWithThumbnailProvider(filePath, cls);
 		if (hr == S_OK)
 			return hr;
-
 	}
+	if (hr != S_OK)
+		hr = ShowPreviewWithShellItemImageFactory(filePath);
 	return hr;
 }
-
-
 //Private
 
 
@@ -181,39 +166,39 @@ HRESULT PreviewGenerator::DoPreview()
 	pRect.left = 5;
 	
 	hr = iPHandler->SetWindow(previewControl->m_hWnd, &pRect);
-	hr = iPHandler->DoPreview();
 	previewControl->ShowWindow(SW_SHOW);
+	hr = iPHandler->DoPreview();
+	//iPHandler->SetFocus();
 	return hr;
 }
 
 HRESULT PreviewGenerator::ShowPreviewWithPreviewHandler(IStream *stream, CLSID cls)
 {
 	DWORD dwRet = ERROR_BAD_ARGUMENTS;
-	
-	if (iPHandler != NULL)
+	if (iPHandler)
 	{
 		iPHandler->Unload();
-		SAFERELEASE(iPHandler);
+		//SAFERELEASE(iPHandler);
 	}
 	IInitializeWithStream	*iIStream;
 	HRESULT hr = CoCreateInstance(cls, NULL, CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER, IID_IPreviewHandler, (LPVOID*)&iPHandler);
 	if (hr == S_OK)
 	{
 		hr = iPHandler->QueryInterface(IID_IInitializeWithStream, (LPVOID*)&iIStream);
-		if (hr != S_OK)
-			return hr;
 	}
 	else
+	{
+		//CoUninitialize();
 		return hr;
-	if (iIStream)
+	}
+	if ( iIStream)
 	{
 		hr = iIStream->Initialize(stream, STGM_READ);
-		if (hr != S_OK)
-			return hr;
 	}
-	if (iPHandler)
-		return DoPreview();
-	return E_FAIL;
+	if (iPHandler &&  hr == S_OK)
+		hr = DoPreview();
+	//CoUninitialize();
+	return hr;
 }
 HRESULT PreviewGenerator::ShowPreviewWithThumbnailProvider(IStream *stream, CLSID cls)
 {
@@ -293,31 +278,54 @@ HRESULT PreviewGenerator::ShowPreviewWithPreviewHandler(CString filePath, CLSID 
 {
 	DWORD dwRet = ERROR_BAD_ARGUMENTS;
 	IInitializeWithFile		*iIFile;
-	if (iPHandler != NULL)
+	if (iPHandler)
 	{
 		iPHandler->Unload();
-		SAFERELEASE(iPHandler);
+		//SAFERELEASE(iPHandler);
 	}
-
 	HRESULT hr = CoCreateInstance(cls, NULL, CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER, IID_IPreviewHandler, (LPVOID*)&iPHandler);
 	if (hr == S_OK)
 	{
 		hr = iPHandler->QueryInterface(IID_IInitializeWithFile, (LPVOID*)&iIFile);
-		if (hr != S_OK)
-			return hr;
 	}
 	else
 		return hr;
-	if (iIFile)
+	if (iIFile && hr == S_OK)
 		hr = iIFile->Initialize(filePath, STGM_READ);
 
-	if (iPHandler)
-		return DoPreview();
-	
-	return E_FAIL;
+	if (iPHandler &&  hr == S_OK)
+		hr = DoPreview();
+	//CoUninitialize();
+	return hr;
 }
 
 HRESULT PreviewGenerator::ShowPreviewWithThumbnailProvider(CString filePath, CLSID clsID)
+{
+	HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+	int nSize = 256;
+	HBITMAP g_hThumbnail;
+	IShellItem *psi;
+	hr = SHCreateItemFromParsingName(filePath, NULL, IID_PPV_ARGS(&psi));
+	if (hr == S_OK)
+	{
+		IThumbnailProvider *pThumbProvider;
+		hr = psi->BindToHandler(NULL, clsID, IID_PPV_ARGS(&pThumbProvider));
+		if (hr == S_OK)
+		{
+			WTS_ALPHATYPE wtsAlpha;
+			hr = pThumbProvider->GetThumbnail(nSize, &g_hThumbnail, &wtsAlpha);
+		}
+		else
+		{
+			
+		}
+	}
+	return hr;
+	
+}
+
+
+HRESULT PreviewGenerator::ShowPreviewWithShellItemImageFactory(CString filePath)
 {
 	HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
 	IShellItemImageFactory *imageFactory;
@@ -340,34 +348,11 @@ HRESULT PreviewGenerator::ShowPreviewWithThumbnailProvider(CString filePath, CLS
 		imageFactory->Release();
 
 	}
-	CoUninitialize();
+	//CoUninitialize();
 	return hr;
-	/*
-	HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
-	int nSize = 256;
-	HBITMAP g_hThumbnail;
-	IShellItem *psi;
-	hr = SHCreateItemFromParsingName(filePath, NULL, IID_PPV_ARGS(&psi));
-	if (hr == S_OK)
-	{
-		IThumbnailProvider *pThumbProvider;
-		hr = psi->BindToHandler(NULL, clsID, IID_PPV_ARGS(&pThumbProvider));
-		if (hr == S_OK)
-		{
-			WTS_ALPHATYPE wtsAlpha;
-			hr = pThumbProvider->GetThumbnail(nSize, &g_hThumbnail, &wtsAlpha);
-		}
-		else
-		{
-			
-		}
-	}
-	return hr;
-	*/
+
+
 }
-
-
-
 
 
 

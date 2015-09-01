@@ -178,7 +178,7 @@ void CPreviewMainDlg::OnBnClickedButtonOpen()
 		fileExt = dlg.GetFileExt();
 		IStream	*iStream;
 		GetStreamFromPath(fileNameFull, &iStream);
-		previewWindow->ShowWindow(SW_HIDE);
+		//previewWindow->ShowWindow(SW_HIDE);
 		pGenerator.previewControl = previewWindow;
 	    hr = pGenerator.BuildPreview(iStream, fileExt);
 
@@ -186,7 +186,7 @@ void CPreviewMainDlg::OnBnClickedButtonOpen()
 		if (hr !=  S_OK)
 			hr = pGenerator.BuildPreview(fileNameFull, fileExt);
 	}
-	previewWindow->ShowWindow(SW_SHOW);
+	//previewWindow->ShowWindow(SW_SHOW);
 }
 HRESULT CPreviewMainDlg::GetStreamFromPath(CString filePath, IStream **ppStream)
 {
