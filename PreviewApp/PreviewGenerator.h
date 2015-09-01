@@ -24,7 +24,7 @@ private:
 	HRESULT PreviewGenerator::ShowPreviewWithThumbnailProvider(CString filePath, CLSID clsID);
 	HRESULT PreviewGenerator::ShowPreviewWithPreviewHandler(CString filePath, CLSID cls);
 
-
+	std::vector<CString> clsidList;
 
 	/*CWnd					*pImage;
 	IPreviewHandler			*iPHandler;

@@ -22,13 +22,13 @@ PreviewGenerator::PreviewGenerator(CWnd *pCntrl)
 HRESULT PreviewGenerator::BuildPreview(IStream *iStream, CString fileExt)
 {
 	HRESULT hr = E_FAIL;
-	std::vector<CString> res;
-	GetClsidsFromExt(fileExt, res);
+//	std::vector<CString> res;
+	GetClsidsFromExt(fileExt, clsidList);
 
-	for (int i = 0; i < res.size(); i++)
+	for (int i = 0; i < clsidList.size(); i++)
 	{
 		CLSID cls;
-		CLSIDFromString((LPWSTR)(LPCTSTR)res[i], &cls);
+		CLSIDFromString((LPWSTR)(LPCTSTR)clsidList[i], &cls);
 		hr = ShowPreviewWithPreviewHandler(iStream, cls);
 		if (hr == S_OK)
 			return hr;
@@ -49,13 +49,13 @@ HRESULT PreviewGenerator::BuildPreview(IStream *iStream, CString fileExt)
 HRESULT PreviewGenerator::BuildPreview(CString filePath, CString fileExt)
 {
 	HRESULT hr = E_FAIL;
-	std::vector<CString> res;
-	GetClsidsFromExt(fileExt, res);
+	//std::vector<CString> res;
+	//GetClsidsFromExt(fileExt, res);
 
-	for (int i = 0; i < res.size(); i++)
+	for (int i = 0; i < clsidList.size(); i++)
 	{
 		CLSID cls;
-		CLSIDFromString((LPWSTR)(LPCTSTR)res[i], &cls);
+		CLSIDFromString((LPWSTR)(LPCTSTR)clsidList[i], &cls);
 		//hr = ShowPreviewWithPreviewHandler(iStream, cls);
 		//if (hr == S_OK)
 		//	return hr;
@@ -179,9 +179,10 @@ HRESULT PreviewGenerator::DoPreview()
 	pRect.bottom -= (pRect.top + 10);
 	pRect.top = 10;
 	pRect.left = 5;
-	previewControl->ShowWindow(SW_SHOW);
+	
 	hr = iPHandler->SetWindow(previewControl->m_hWnd, &pRect);
 	hr = iPHandler->DoPreview();
+	previewControl->ShowWindow(SW_SHOW);
 	return hr;
 }
 
@@ -263,7 +264,7 @@ void PreviewGenerator::DrawBitMap(HBITMAP bmp)
 	previewControl->GetWindowRect(rc);
 	previewControl->ShowWindow(SW_HIDE);
 	HDC hdc = previewControl->GetDC()->GetSafeHdc();
-	previewControl->ShowWindow(SW_SHOW);
+	
 
 	hdcMem = CreateCompatibleDC(hdc);
 	oldBitmap = SelectObject(hdcMem, bmp);
@@ -281,10 +282,12 @@ void PreviewGenerator::DrawBitMap(HBITMAP bmp)
 	Y += rc.Height() / 2;
 	X -= bitmapSize.cx / 2;
 	Y -= bitmapSize.cy / 2;
+	previewControl->ShowWindow(SW_SHOW);
 	BitBlt(hdc, X, Y, newSize.cx, newSize.cy, hdcMem, 0, 0, SRCCOPY);
 
 	SelectObject(hdcMem, oldBitmap);
 	DeleteDC(hdcMem);
+	
 }
 HRESULT PreviewGenerator::ShowPreviewWithPreviewHandler(CString filePath, CLSID cls)
 {
@@ -316,9 +319,9 @@ HRESULT PreviewGenerator::ShowPreviewWithPreviewHandler(CString filePath, CLSID 
 
 HRESULT PreviewGenerator::ShowPreviewWithThumbnailProvider(CString filePath, CLSID clsID)
 {
-
+	HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
 	IShellItemImageFactory *imageFactory;
-	HRESULT hr = SHCreateItemFromParsingName(filePath, NULL, IID_PPV_ARGS(&imageFactory));
+	hr = SHCreateItemFromParsingName(filePath, NULL, IID_PPV_ARGS(&imageFactory));
 	if (hr == S_OK)
 	{
 		CRect pRect;
@@ -334,7 +337,10 @@ HRESULT PreviewGenerator::ShowPreviewWithThumbnailProvider(CString filePath, CLS
 		{
 			DrawBitMap(btmap);
 		}
+		imageFactory->Release();
+
 	}
+	CoUninitialize();
 	return hr;
 	/*
 	HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
