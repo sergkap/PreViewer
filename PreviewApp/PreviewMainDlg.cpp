@@ -171,7 +171,7 @@ void CPreviewMainDlg::OnBnClickedButtonOpen()
 	CFileDialog dlg(TRUE);
 	CString fileNameFull;
 	CString fileExt;
-	HRESULT hr;
+	HRESULT hr = E_FAIL;
 	if (dlg.DoModal() == IDOK)
 	{
 		fileNameFull = dlg.GetPathName();		
@@ -182,7 +182,7 @@ void CPreviewMainDlg::OnBnClickedButtonOpen()
 		pGenerator.previewControl = previewWindow;
 	    hr = pGenerator.BuildPreview(iStream, fileExt);
 
-		//only for file path...
+		////only for file path...
 		if (hr !=  S_OK)
 			hr = pGenerator.BuildPreview(fileNameFull, fileExt);
 	}

@@ -24,7 +24,6 @@ HRESULT PreviewGenerator::BuildPreview(IStream *iStream, CString fileExt)
 	HRESULT hr = E_FAIL;
 //	std::vector<CString> res;
 	GetClsidsFromExt(fileExt, clsidList);
-
 	for (int i = 0; i < clsidList.size(); i++)
 	{
 		CLSID cls;
@@ -42,8 +41,6 @@ HRESULT PreviewGenerator::BuildPreview(IStream *iStream, CString fileExt)
 HRESULT PreviewGenerator::BuildPreview(CString filePath, CString fileExt)
 {
 	HRESULT hr = E_FAIL;
-	//std::vector<CString> res;
-	//GetClsidsFromExt(fileExt, res);
 	for (int i = 0; i < clsidList.size(); i++)
 	{
 		CLSID cls;
@@ -169,6 +166,7 @@ HRESULT PreviewGenerator::DoPreview()
 	previewControl->ShowWindow(SW_SHOW);
 	hr = iPHandler->DoPreview();
 	//iPHandler->SetFocus();
+	//iPHandler->Unload();
 	return hr;
 }
 
@@ -178,7 +176,8 @@ HRESULT PreviewGenerator::ShowPreviewWithPreviewHandler(IStream *stream, CLSID c
 	if (iPHandler)
 	{
 		iPHandler->Unload();
-		//SAFERELEASE(iPHandler);
+		SAFERELEASE(iPHandler);
+		
 	}
 	IInitializeWithStream	*iIStream;
 	HRESULT hr = CoCreateInstance(cls, NULL, CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER, IID_IPreviewHandler, (LPVOID*)&iPHandler);
@@ -188,7 +187,6 @@ HRESULT PreviewGenerator::ShowPreviewWithPreviewHandler(IStream *stream, CLSID c
 	}
 	else
 	{
-		//CoUninitialize();
 		return hr;
 	}
 	if ( iIStream)
@@ -197,7 +195,9 @@ HRESULT PreviewGenerator::ShowPreviewWithPreviewHandler(IStream *stream, CLSID c
 	}
 	if (iPHandler &&  hr == S_OK)
 		hr = DoPreview();
-	//CoUninitialize();
+
+	SAFERELEASE(iIStream);
+	CoUninitialize();
 	return hr;
 }
 HRESULT PreviewGenerator::ShowPreviewWithThumbnailProvider(IStream *stream, CLSID cls)
@@ -281,7 +281,7 @@ HRESULT PreviewGenerator::ShowPreviewWithPreviewHandler(CString filePath, CLSID 
 	if (iPHandler)
 	{
 		iPHandler->Unload();
-		//SAFERELEASE(iPHandler);
+		SAFERELEASE(iPHandler);
 	}
 	HRESULT hr = CoCreateInstance(cls, NULL, CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER, IID_IPreviewHandler, (LPVOID*)&iPHandler);
 	if (hr == S_OK)
@@ -295,7 +295,8 @@ HRESULT PreviewGenerator::ShowPreviewWithPreviewHandler(CString filePath, CLSID 
 
 	if (iPHandler &&  hr == S_OK)
 		hr = DoPreview();
-	//CoUninitialize();
+	SAFERELEASE(iIFile);
+	CoUninitialize();
 	return hr;
 }
 
@@ -342,13 +343,12 @@ HRESULT PreviewGenerator::ShowPreviewWithShellItemImageFactory(CString filePath)
 		HBITMAP btmap;
 		hr = imageFactory->GetImage(size, SIIGBF_RESIZETOFIT, &btmap);
 		if (hr == S_OK)
-		{
 			DrawBitMap(btmap);
-		}
-		imageFactory->Release();
+//		
 
 	}
-	//CoUninitialize();
+	CoUninitialize();
+	imageFactory->Release();
 	return hr;
 
 
