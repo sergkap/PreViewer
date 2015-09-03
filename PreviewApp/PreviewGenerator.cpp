@@ -23,11 +23,11 @@ HRESULT PreviewGenerator::BuildPreview(IStream *iStream, CString fileExt)
 {
 	HRESULT hr = E_FAIL;
 //	std::vector<CString> res;
-	GetClsidsFromExt(fileExt, clsidList);
+	//GetClsidsFromExt(fileExt, clsidList);
 	for (int i = 0; i < clsidList.size(); i++)
 	{
-		CLSID cls;
-		CLSIDFromString((LPWSTR)(LPCTSTR)clsidList[i], &cls);
+		CLSID cls = clsidList[i];
+		//CLSIDFromString((LPWSTR)(LPCTSTR)clsidList[i], &cls);
 		hr = ShowPreviewWithPreviewHandler(iStream, cls);
 		if (hr == S_OK)
 			return hr;
@@ -43,8 +43,8 @@ HRESULT PreviewGenerator::BuildPreview(CString filePath, CString fileExt)
 	HRESULT hr = E_FAIL;
 	for (int i = 0; i < clsidList.size(); i++)
 	{
-		CLSID cls;
-		CLSIDFromString((LPWSTR)(LPCTSTR)clsidList[i], &cls);
+		CLSID cls = clsidList[i];
+		//CLSIDFromString((LPWSTR)(LPCTSTR)clsidList[i], &cls);
 
 		hr = ShowPreviewWithPreviewHandler(filePath, cls);
 		if (hr == S_OK)
@@ -60,9 +60,9 @@ HRESULT PreviewGenerator::BuildPreview(CString filePath, CString fileExt)
 //Private
 
 
-void PreviewGenerator::GetClsidsFromExt(CString ext, std::vector<CString> &retVal)
+void PreviewGenerator::GetClsidsFromExt(CString ext, std::vector<CLSID> &retVal)
 {
-	std::vector<CString> res;
+	std::vector<CLSID> res;
 	DWORD size = 1024;
 	TCHAR buff[1024];
 	LPCWSTR extra = L"{8895B1C6-B41F-4C1C-A562-0D564250836F}";
@@ -70,25 +70,39 @@ void PreviewGenerator::GetClsidsFromExt(CString ext, std::vector<CString> &retVa
 	cs.Format(L".%s", ext);
 	HRESULT hr = AssocQueryString(ASSOCF_VERIFY, ASSOCSTR_SHELLEXTENSION, cs, extra, buff, &size);
 	if (hr == S_OK)
-		res.push_back(buff);
+	{
+		CLSID cls;
+		CLSIDFromString((LPWSTR)(LPCTSTR)buff, &cls);
+		res.push_back(cls);
+	}
 	extra = L"{BB2E617C-0920-11d1-9A0B-00C04FC2D6C1}";
 	hr = AssocQueryString(ASSOCF_VERIFY, ASSOCSTR_SHELLEXTENSION, cs, extra, buff, &size);
 	if (hr == S_OK)
 	{
-		std::vector<CString>::iterator it = find(res.begin(), res.end(), buff);
+		std::vector<CLSID>::iterator it = find(res.begin(), res.end(), buff);
 		if (it == res.end())
-			res.push_back(buff);
+		{
+			CLSID cls;
+			CLSIDFromString((LPWSTR)(LPCTSTR)buff, &cls);
+			res.push_back(cls);
+		}
 	}
 	extra = L"{e357fccd-a995-4576-b01f-234630154e96}";
 	hr = AssocQueryString(ASSOCF_VERIFY, ASSOCSTR_SHELLEXTENSION, cs, extra, buff, &size);
 	if (hr == S_OK)
 	{
-		std::vector<CString>::iterator it = find(res.begin(), res.end(), buff);
+		std::vector<CLSID>::iterator it = find(res.begin(), res.end(), buff);
 		if (it == res.end())
-			res.push_back(buff);
+		{
+			CLSID cls;
+			CLSIDFromString((LPWSTR)(LPCTSTR)buff, &cls);
+			res.push_back(cls);
+		}
 	}
 	extra = L"{534A1E02-D58F-44f0-B58B-36CBED287C7C}";
-	res.push_back(extra);
+	CLSID cls;
+	CLSIDFromString((LPWSTR)(LPCTSTR)extra, &cls);
+	res.push_back(cls);
 	//hr = AssocQueryString(ASSOCF_VERIFY, ASSOCSTR_SHELLEXTENSION, cs, extra, buff, &size);
 	//if (hr == S_OK)
 	//{
@@ -111,7 +125,12 @@ void PreviewGenerator::GetClsidsFromExt(CString ext, std::vector<CString> &retVa
 		cData = sizeof(wcData);
 		hr = RegQueryValue(HKEY_CLASSES_ROOT, cs, wcData, &cData);
 		if (hr == S_OK)
-			res.push_back(wcData);
+		{
+			CLSID cls;
+			CLSIDFromString((LPWSTR)(LPCTSTR)wcData, &cls);
+			res.push_back(cls);
+			//res.push_back(wcData);
+		}
 	}
 
 	cs.Format(L".%s", ext);
@@ -122,26 +141,38 @@ void PreviewGenerator::GetClsidsFromExt(CString ext, std::vector<CString> &retVa
 		hr = RegQueryValue(HKEY_CLASSES_ROOT, cs, wcData, &cData);
 		if (hr == S_OK)
 		{
-			std::vector<CString>::iterator it = find(res.begin(), res.end(), wcData);
+			std::vector<CLSID>::iterator it = find(res.begin(), res.end(), wcData);
 			if (it == res.end())
-				res.push_back(wcData);
+			{
+				CLSID cls;
+				CLSIDFromString((LPWSTR)(LPCTSTR)wcData, &cls);
+				res.push_back(cls);
+			}
 		}
 
 		cs.Format(L"SystemFileAssociations\\%s\\ShellEx\\{BB2E617C-0920-11d1-9A0B-00C04FC2D6C1}", ppszType);
 		hr = RegQueryValue(HKEY_CLASSES_ROOT, cs, wcData, &cData);
 		if (hr == S_OK)
 		{
-			std::vector<CString>::iterator it = find(res.begin(), res.end(), wcData);
+			std::vector<CLSID>::iterator it = find(res.begin(), res.end(), wcData);
 			if (it == res.end())
-				res.push_back(wcData);
+			{
+				CLSID cls;
+				CLSIDFromString((LPWSTR)(LPCTSTR)wcData, &cls);
+				res.push_back(cls);
+			}
 		}
 		cs.Format(L"SystemFileAssociations\\%s\\ShellEx\\ContextMenuHandlers\\ShellVideoSlideshow", ppszType);
 		hr = RegQueryValue(HKEY_CLASSES_ROOT, cs, wcData, &cData);
 		if (hr == S_OK)
 		{
-			std::vector<CString>::iterator it = find(res.begin(), res.end(), wcData);
+			std::vector<CLSID>::iterator it = find(res.begin(), res.end(), wcData);
 			if (it == res.end())
-				res.push_back(wcData);
+			{
+				CLSID cls;
+				CLSIDFromString((LPWSTR)(LPCTSTR)wcData, &cls);
+				res.push_back(cls);
+			}
 		}
 	}
 

@@ -13,7 +13,7 @@ public:
 	HRESULT PreviewGenerator::BuildPreview(CString filePath, CString fileExt);
 private:
 	void PreviewGenerator::DrawBitMap(HBITMAP bmp);
-	void PreviewGenerator::GetClsidsFromExt(CString ext, std::vector<CString> &retVal);
+	void PreviewGenerator::GetClsidsFromExt(CString ext, std::vector<CLSID> &retVal);
 
 	IPreviewHandler			*iPHandler;
 	HRESULT PreviewGenerator::DoPreview();
@@ -25,7 +25,7 @@ private:
 	HRESULT PreviewGenerator::ShowPreviewWithPreviewHandler(CString filePath, CLSID cls);
 
 	HRESULT PreviewGenerator::ShowPreviewWithShellItemImageFactory(CString filePath);
-	std::vector<CString> clsidList;
+	std::vector<CLSID> clsidList;
 
 	/*CWnd					*pImage;
 	IPreviewHandler			*iPHandler;
