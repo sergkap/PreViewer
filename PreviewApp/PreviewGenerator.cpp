@@ -23,7 +23,7 @@ HRESULT PreviewGenerator::BuildPreview(IStream *iStream, CString fileExt)
 {
 	HRESULT hr = E_FAIL;
 //	std::vector<CString> res;
-	//GetClsidsFromExt(fileExt, clsidList);
+	GetClsidsFromExt(fileExt, clsidList);
 	for (int i = 0; i < clsidList.size(); i++)
 	{
 		CLSID cls = clsidList[i];
@@ -54,7 +54,14 @@ HRESULT PreviewGenerator::BuildPreview(CString filePath, CString fileExt)
 			return hr;
 	}
 	if (hr != S_OK)
+	{
+		if (iPHandler)
+		{
+			iPHandler->Unload();
+			SAFERELEASE(iPHandler);
+		}
 		hr = ShowPreviewWithShellItemImageFactory(filePath);
+	}
 	return hr;
 }
 //Private
@@ -72,37 +79,33 @@ void PreviewGenerator::GetClsidsFromExt(CString ext, std::vector<CLSID> &retVal)
 	if (hr == S_OK)
 	{
 		CLSID cls;
-		CLSIDFromString((LPWSTR)(LPCTSTR)buff, &cls);
+		CLSIDFromString(buff, &cls);
 		res.push_back(cls);
 	}
 	extra = L"{BB2E617C-0920-11d1-9A0B-00C04FC2D6C1}";
 	hr = AssocQueryString(ASSOCF_VERIFY, ASSOCSTR_SHELLEXTENSION, cs, extra, buff, &size);
 	if (hr == S_OK)
 	{
-		std::vector<CLSID>::iterator it = find(res.begin(), res.end(), buff);
+		CLSID cls;
+		CLSIDFromString(buff, &cls);
+		std::vector<CLSID>::iterator it = find(res.begin(), res.end(), cls);
 		if (it == res.end())
-		{
-			CLSID cls;
-			CLSIDFromString((LPWSTR)(LPCTSTR)buff, &cls);
 			res.push_back(cls);
-		}
 	}
 	extra = L"{e357fccd-a995-4576-b01f-234630154e96}";
 	hr = AssocQueryString(ASSOCF_VERIFY, ASSOCSTR_SHELLEXTENSION, cs, extra, buff, &size);
 	if (hr == S_OK)
 	{
-		std::vector<CLSID>::iterator it = find(res.begin(), res.end(), buff);
+		CLSID cls;
+		CLSIDFromString(buff, &cls);
+		std::vector<CLSID>::iterator it = find(res.begin(), res.end(), cls);
 		if (it == res.end())
-		{
-			CLSID cls;
-			CLSIDFromString((LPWSTR)(LPCTSTR)buff, &cls);
 			res.push_back(cls);
-		}
 	}
-	extra = L"{534A1E02-D58F-44f0-B58B-36CBED287C7C}";
-	CLSID cls;
-	CLSIDFromString((LPWSTR)(LPCTSTR)extra, &cls);
-	res.push_back(cls);
+	//extra = L"{534A1E02-D58F-44f0-B58B-36CBED287C7C}";
+	//CLSID cls;
+	//CLSIDFromString(extra, &cls);
+	//res.push_back(cls);
 	//hr = AssocQueryString(ASSOCF_VERIFY, ASSOCSTR_SHELLEXTENSION, cs, extra, buff, &size);
 	//if (hr == S_OK)
 	//{
@@ -127,9 +130,8 @@ void PreviewGenerator::GetClsidsFromExt(CString ext, std::vector<CLSID> &retVal)
 		if (hr == S_OK)
 		{
 			CLSID cls;
-			CLSIDFromString((LPWSTR)(LPCTSTR)wcData, &cls);
+			CLSIDFromString(wcData, &cls);
 			res.push_back(cls);
-			//res.push_back(wcData);
 		}
 	}
 
@@ -141,38 +143,32 @@ void PreviewGenerator::GetClsidsFromExt(CString ext, std::vector<CLSID> &retVal)
 		hr = RegQueryValue(HKEY_CLASSES_ROOT, cs, wcData, &cData);
 		if (hr == S_OK)
 		{
-			std::vector<CLSID>::iterator it = find(res.begin(), res.end(), wcData);
+			CLSID cls;
+			CLSIDFromString(buff, &cls);
+			std::vector<CLSID>::iterator it = find(res.begin(), res.end(), cls);
 			if (it == res.end())
-			{
-				CLSID cls;
-				CLSIDFromString((LPWSTR)(LPCTSTR)wcData, &cls);
 				res.push_back(cls);
-			}
 		}
 
 		cs.Format(L"SystemFileAssociations\\%s\\ShellEx\\{BB2E617C-0920-11d1-9A0B-00C04FC2D6C1}", ppszType);
 		hr = RegQueryValue(HKEY_CLASSES_ROOT, cs, wcData, &cData);
 		if (hr == S_OK)
 		{
-			std::vector<CLSID>::iterator it = find(res.begin(), res.end(), wcData);
+			CLSID cls;
+			CLSIDFromString(buff, &cls);
+			std::vector<CLSID>::iterator it = find(res.begin(), res.end(), cls);
 			if (it == res.end())
-			{
-				CLSID cls;
-				CLSIDFromString((LPWSTR)(LPCTSTR)wcData, &cls);
 				res.push_back(cls);
-			}
 		}
 		cs.Format(L"SystemFileAssociations\\%s\\ShellEx\\ContextMenuHandlers\\ShellVideoSlideshow", ppszType);
 		hr = RegQueryValue(HKEY_CLASSES_ROOT, cs, wcData, &cData);
 		if (hr == S_OK)
 		{
-			std::vector<CLSID>::iterator it = find(res.begin(), res.end(), wcData);
+			CLSID cls;
+			CLSIDFromString(buff, &cls);
+			std::vector<CLSID>::iterator it = find(res.begin(), res.end(), cls);
 			if (it == res.end())
-			{
-				CLSID cls;
-				CLSIDFromString((LPWSTR)(LPCTSTR)wcData, &cls);
 				res.push_back(cls);
-			}
 		}
 	}
 
@@ -196,8 +192,6 @@ HRESULT PreviewGenerator::DoPreview()
 	hr = iPHandler->SetWindow(previewControl->m_hWnd, &pRect);
 	previewControl->ShowWindow(SW_SHOW);
 	hr = iPHandler->DoPreview();
-	//iPHandler->SetFocus();
-	//iPHandler->Unload();
 	return hr;
 }
 
@@ -228,7 +222,6 @@ HRESULT PreviewGenerator::ShowPreviewWithPreviewHandler(IStream *stream, CLSID c
 		hr = DoPreview();
 
 	SAFERELEASE(iIStream);
-	CoUninitialize();
 	return hr;
 }
 HRESULT PreviewGenerator::ShowPreviewWithThumbnailProvider(IStream *stream, CLSID cls)
@@ -327,7 +320,6 @@ HRESULT PreviewGenerator::ShowPreviewWithPreviewHandler(CString filePath, CLSID 
 	if (iPHandler &&  hr == S_OK)
 		hr = DoPreview();
 	SAFERELEASE(iIFile);
-	CoUninitialize();
 	return hr;
 }
 
@@ -370,9 +362,10 @@ HRESULT PreviewGenerator::ShowPreviewWithShellItemImageFactory(CString filePath)
 		int s = pRect.Height();
 		if (s>pRect.Width())
 			s = pRect.Width();
+		s = 256;
 		SIZE size = { s, s };
 		HBITMAP btmap;
-		hr = imageFactory->GetImage(size, SIIGBF_RESIZETOFIT, &btmap);
+		hr = imageFactory->GetImage(size, SIIGBF_BIGGERSIZEOK, &btmap);
 		if (hr == S_OK)
 			DrawBitMap(btmap);
 //		
