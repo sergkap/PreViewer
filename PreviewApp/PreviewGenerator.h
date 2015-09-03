@@ -25,8 +25,10 @@ private:
 	HRESULT PreviewGenerator::ShowPreviewWithPreviewHandler(CString filePath, CLSID cls);
 
 	HRESULT PreviewGenerator::ShowPreviewWithShellItemImageFactory(CString filePath);
-	std::vector<CLSID> clsidList;
-
+	HRESULT PreviewGenerator::GetHighResolutionIcon(CString filePath);
+	std::vector<CLSID>      clsidList;
+	CString					fileExt;
+	CString					filePath;
 	/*CWnd					*pImage;
 	IPreviewHandler			*iPHandler;
 	IInitializeWithFile		*iIFile;

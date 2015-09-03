@@ -1,8 +1,8 @@
 #include "stdafx.h"
 #include "PreviewGenerator.h"
 #include <wingdi.h>
-
-
+#include "commoncontrols.h"
+#include <shellapi.h>
 PreviewGenerator::PreviewGenerator()
 {
 	iPHandler = NULL;
@@ -34,12 +34,14 @@ HRESULT PreviewGenerator::BuildPreview(IStream *iStream, CString fileExt)
 		hr = ShowPreviewWithThumbnailProvider(iStream, cls);
 		if (hr == S_OK)
 			return hr;
-
+		
 	}
 	return hr;
 }
-HRESULT PreviewGenerator::BuildPreview(CString filePath, CString fileExt)
+HRESULT PreviewGenerator::BuildPreview(CString fPath, CString fExt)
 {
+	filePath = fPath;
+	fileExt = fExt;
 	HRESULT hr = E_FAIL;
 	for (int i = 0; i < clsidList.size(); i++)
 	{
@@ -61,6 +63,8 @@ HRESULT PreviewGenerator::BuildPreview(CString filePath, CString fileExt)
 			SAFERELEASE(iPHandler);
 		}
 		hr = ShowPreviewWithShellItemImageFactory(filePath);
+		if (hr != S_OK)
+			hr = GetHighResolutionIcon(filePath);
 	}
 	return hr;
 }
@@ -292,7 +296,7 @@ void PreviewGenerator::DrawBitMap(HBITMAP bmp)
 	X -= bitmapSize.cx / 2;
 	Y -= bitmapSize.cy / 2;
 	previewControl->ShowWindow(SW_SHOW);
-	BitBlt(hdc, X, Y, newSize.cx, newSize.cy, hdcMem, 0, 0, SRCCOPY);
+	BitBlt(hdc, X, Y, newSize.cx, newSize.cy, hdcMem, 0, 0, SRCAND);
 
 	SelectObject(hdcMem, oldBitmap);
 	DeleteDC(hdcMem);
@@ -362,14 +366,19 @@ HRESULT PreviewGenerator::ShowPreviewWithShellItemImageFactory(CString filePath)
 		int s = pRect.Height();
 		if (s>pRect.Width())
 			s = pRect.Width();
-		s = 256;
+		//s = 256;
+		_SIIGBF flag = SIIGBF_RESIZETOFIT;
+		if (fileExt != L"pdf" && fileExt != L"PDF")
+		{
+			s = 256;
+			flag = SIIGBF_BIGGERSIZEOK;
+		}
 		SIZE size = { s, s };
+		
 		HBITMAP btmap;
-		hr = imageFactory->GetImage(size, SIIGBF_BIGGERSIZEOK, &btmap);
+		hr = imageFactory->GetImage(size, flag, &btmap);
 		if (hr == S_OK)
 			DrawBitMap(btmap);
-//		
-
 	}
 	CoUninitialize();
 	imageFactory->Release();
@@ -378,6 +387,35 @@ HRESULT PreviewGenerator::ShowPreviewWithShellItemImageFactory(CString filePath)
 
 }
 
+HRESULT PreviewGenerator::GetHighResolutionIcon(CString filePath)
+{
+	// Get the image list index of the icon
+	SHFILEINFO sfi;
+	if (!SHGetFileInfo(filePath, 0, &sfi, sizeof(sfi), SHGFI_SYSICONINDEX)) return NULL;
+
+	// Get the jumbo image list
+	IImageList *piml;
+	HRESULT hr = SHGetImageList(SHIL_JUMBO, IID_PPV_ARGS(&piml));
+	if (hr != S_OK) return hr;
+
+	// Extract an icon
+	HICON hico;
+	piml->GetIcon(sfi.iIcon, ILD_IMAGE, &hico);
+	HDC hdc = previewControl->GetDC()->GetSafeHdc();
+	DrawIconEx(hdc, 0, 0, hico, 256, 256, 0, NULL, DI_NORMAL);
+
+	//ICONINFO iconinfo;
+	//GetIconInfo(hico, &iconinfo);
+	//HBITMAP hBitmap = iconinfo.hbmColor;
+	//BITMAP bmpInfo;
+	//GetObject(hBitmap, sizeof(bmpInfo), &bmpInfo);
+	//SIZE bitmapSize;
+	//bitmapSize.cx = bmpInfo.bmWidth;
+	//bitmapSize.cy = bmpInfo.bmHeight;
+
+	piml->Release();
+	return hr;
+}
 
 
 
